@@ -1,0 +1,152 @@
+\documentclass{article}
+
+\usepackage{polski}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1.5in]{geometry}
+\usepackage{fancyhdr}
+\usepackage{lastpage}
+\usepackage{fontenc}
+\usepackage{graphicx}
+\usepackage{wrapfig}
+\usepackage[none]{hyphenat}
+
+
+\pagestyle{fancy}
+\fancyhf{}
+\chead{Specyfikacja implementacyjna}
+\rfoot{Strona \thepage \hspace{1pt} z \pageref{LastPage}}
+
+\title{Specyfikacja implementacyjna projektu\\ "Gra w życie"}
+\author{Krzysztof Kalata, Łukasz Laskowski}
+
+\begin{document}
+
+\maketitle
+
+\tableofcontents
+\newpage
+
+\section{Informacje ogólne}
+\subsection{Język}
+Program zostanie napisany w języku C i będzie przystosowany uruchomienia w standardzie znajdującym
+się na serwerze ssh: \textit{ssh.jimp.iem.pw.edu.pl}.
+\subsection{Konwencja}
+Przyjmujemy, że:
+\begin{itemize}
+  \item nazwy modułów zaczynamy wielką literą i następne słowa (bez odstępu) również rozpoczynane są
+    od wielkich liter
+  \item nazwy funkcji zaczynamy małą literą i następne słowa (bez odstępu) rozpoczynane są od wielkich
+    liter
+  \item nazwy zmiennych zaczynamy małą literą i następne słowa (bez odstępu) rozpoczynane są również 
+     małymi literami
+\end{itemize}
+\subsection{Wykorzystane dodatkowe biblioteki}
+Poza standardowymi bibliotekami typu stdio.h czy stdlib.h, w programie wykorzystamy także biblioteki:
+\begin{itemize}
+  \item time.h
+  \item png.h
+\end{itemize}
+
+\section{Opis modułów}
+\subsection{GameOfLife}
+\subsubsection{Działanie}
+Jest głównym modułem, którego zadaniami są:
+\begin{itemize}
+  \item wywoływanie działania pozostałych modułów,
+  \item interpretacja otrzymanych flag przy uruchamianiu programu,
+  \item przekazywanie wydobytych z wejścia informacji do odpowiednich funkcji.
+\end{itemize}
+\subsubsection{Najważniejsze funkcje}
+Jako że moduł ten ``prowadzi" cały program, potrzebuje on tylko jednej funkcji:\\
+{\fontfamily{qcr}\selectfont main()}-- to w tej funkcji sprawdzane są
+flagi, otwierane są uchwyty do plików, sprawdzenie, czy zostało to przeprowadzone bez problemu
+oraz przekazanie uchwytu do pliku wejściowego do \textit{Readera}.\\
+Funkcja następnie wywołuje działanie głównego modułu, przeprowadzającego generacje, a~po każdym
+wykonanym kroku (w przypadku flagi -sbs jedynie po wybranych) uruchamia funkcje
+konwertujące wyniki do odpowiednich rozszerzeń oraz plików.
+
+\subsection{Reader}
+\subsubsection{Działanie}
+Moduł czytający dane, którego rolę można opisać następująco:
+\begin{itemize}
+  \item analizuje plik wejściowy
+  \item odczytuje dane z pliku wejściowego
+  \item tworzy struktury potrzebne do przechowywania siatki w pamięci
+  \item uzupełnia nowo stworzoną planszę informacjami z pliku wejściowego
+\end{itemize}
+\subsubsection{Najważniejsze funkcje}
+Moduł ten również posiada dwie funkcje:\\
+{\fontfamily{qcr}\selectfont readFile()}-- po otrzymaniu ścieżki do pliku wejściowego, analizuje
+poprawność danych w~pliku oraz wpisuje je do utworzonej struktury.\\
+{\fontfamily{qcr}\selectfont checkFile()}-- funkcja ta otrzymuje ścieżkę do pliku wejściowego
+jeszcze przed funkcją readFile(), aby sprawdzić poprawność danych. Sprawdzane jest przede wszystkim
+to, czy~w~pliku podane są wymiary planszy (jako dwie pierwsze liczby) oraz czy ciąg opisujący
+plaszę składa się wyłącznie z zer i jedynek.
+
+\subsection{Simulation}
+\subsubsection{Działanie}
+Jest to serce \textit{Gry w życie}. To w tym module następują takie czynności jak:
+\begin{itemize}
+  \item pobranie od readera planszy wraz z informacją o liczbie iteracji do wykonania
+  \item przygotowuje kopię planszy, niezbędną do prostego przeprowadzenia symulacji
+  \item tworzy odpowiednią ilość generacji
+  \item komunikuje się w modułem eksportującym wyniki każdej iteracji do plików png i txt
+\end{itemize}
+W module tym operujemy na samej planszy, zatem to też tu pojawi się definicja struktury
+spełniającej rolę swego rodzaju pojemnika, zawierającego wszystkie niezbędne informacje
+o~aktualnej siatce:\\
+{\fontfamily{qcr}\selectfont
+struct b\{ \\
+int height, width;\\
+int **life, **copy;\\
+\} *board;}
+
+\subsubsection{Najważniejsze funkcje}
+{\fontfamily{qcr}\selectfont generate()}-- funkcja ta aktualizuje stany wszystkich komórek
+na planszy\\
+{\fontfamily{qcr}\selectfont copy()}-- funkcja przenosząca dane z wektora \textit{life} na
+wektor \textit{copy}\\
+
+\subsection{Converter}
+\subsubsection{Działanie}
+Jest to moduł tworzący obrazy png oraz odpowiadające im pliki txt na podstawie planszy otrzymanej
+z przeprowadzonych symulacji. Pliki txt tworzone są po to, by móc uruchomić program od wybranej
+iteracji, bez konieczności tworzenia oddzielnego testu.
+\subsubsection{Najważniejsze funkcje}
+{\fontfamily{qcr}\selectfont toPNG()}-- funkcja eksportująca planszę do obrazu formatu PNG.\\
+{\fontfamily{qcr}\selectfont toTxt()}-- funkcja eksportująca planszę do formatu txt.
+
+\subsection{Generator}
+Jest to oddzielny program, który w linii wywołania otrzymuje dwie wartości -- wysokość i szerokość
+planszy. Na ich podstawie tworzy plik tekstowy w formacie odpowiadającym plikom wejściowym
+\textit{Gry w życie}, uzupełniając go losowo symbolami `1' i `0'.
+
+\subsection{Diagram modułów}
+\begin{center}
+  \includegraphics[width=6in,height=5in,keepaspectratio]{diagram.png}
+\end{center}
+
+\newpage
+\section{Testowanie}
+\subsection{Konwencje}
+Testy będą przebiegały w kilku fazach:
+\begin{itemize}
+  \item testowanie poprawnego współdziałania modułów, poprzez dostarczenie im wygenerowanych
+    losowo w Generatorze plansz i obserwowanie w trybie \textit{steb-by-step} wczytywania,
+    poprawności zapisu, przekazywania struktur itp.
+  \item testowanie ogólnego działania algorytmów modułu Simulation. W tej części testy będą odbywać
+    się na odgórnie zdefiniowanych planszach z wbudowanymi strukturami typu \textit{Niezmiennych}
+    (klocek, łódź, bochenek), \textit{Oscylatorów} (żabka, krokodyl), czy \textit{Statków} (Glider,
+    Dakota) i obserwowanie, czy zachowują się poprawnie.
+  \item wypisywanie plansz na konsolę lub do plików tekstowych w celu sprawdzenia poprawności
+    przeprowadzanych iteracji
+\end{itemize}
+\subsection{Użyte narzędzia}
+Poza testowaniem poprawności działania algorytmów, przetestujemy program pod względem poprawnego
+zarządzania pamięcią. Użyjemy do tego dwóch narzędzi:
+\begin{itemize}
+  \item program Valgrind na platformie Linux
+  \item program Dr. Memory na platformie Windows
+\end{itemize}
+
+\end{document}
